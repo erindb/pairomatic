@@ -179,9 +179,9 @@ def send_emails(pairs, data):
 		salutation = 'Hi ' + namesub(personA) + ' and ' + namesub(personB) + '!'
 		body = salutation + """
 
-Congratulations! The two of you have been randomly paired to meet up and tell each other about your work and give each other feedback.
+Congratulations! This month, the two of you have been randomly paired to meet up and tell each other about your work and give each other feedback.
 
-Please set up a meeting in the next couple weeks! Here are some ideas of what you can do:
+Please set up a meeting any time in the coming month! Here are some ideas of what you can do:
 
 * talk over lunch or coffee
 * exchange drafts of a paper
@@ -189,13 +189,15 @@ Please set up a meeting in the next couple weeks! Here are some ideas of what yo
 
 Thanks and have fun!
 
-Erin"""
+Erin
+
+P.S. Just let me know if you want to be taken off this list. Thanks!"""
 
 		sendemail(from_addr    = my_email_address, 
 				  to_addr_list = [email_addresses[personA], email_addresses[personB]],
 				  cc_addr_list = [my_email_address],
 				  bcc_addr_list = [],
-				  subject      = 'CoCoLab Pair-o-Matic Coffee Date Generator', 
+				  subject      = 'CoCoLab + LangCogLab Pair-o-Matic Coffee Date Generator', 
 				  message      = body, 
 				  login        = my_user_id, 
 				  password     = password)
