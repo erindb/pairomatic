@@ -19,6 +19,6 @@ Once data file is specified, run:
 
 	python pair-o-matic.py
 
-In order to run automatically once every two weeks on Tuesdays at 17:39, include the following cronjob:
+In order to run automatically on the 1st of the month at 2pm, include the following cronjob:
 
-	39 17 * * 2 bash ~/cocolab/pair-o-matic/pair-o-matic.sh
+	0 14 1 * * bash ~/path/to/pair-o-matic/pair-o-matic.sh
