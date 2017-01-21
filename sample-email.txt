@@ -1,0 +1,13 @@
+Pairomatic Coffee Date Generator!
+
+
+Congratulations! You two have been paired up this month to meet and talk about your work. Here are some suggestions of things you can do:
+
+* explain a recent project
+* practice a talk
+* swap papers to edit
+* review/discuss each other's code
+
+Have fun!
+
+Erin
