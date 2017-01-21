@@ -61,12 +61,15 @@ def main():
 
 		if (mode=="send" and mode!="test"):
 			with open('data.json', 'w') as outfile:
-				json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+				json.dump(data, outfile, sort_keys=True, indent=4,
+					separators=(',', ': '))
 				print "updating history"
 		else:
-			print "you are in test mode. no data written to data.json. see test.out for what would have been written to data.json."
+			print "you are in test mode. no data written to data.json.",
+			print "see test.out for what would have been written to data.json."
 			with open('test.out', 'w') as outfile:
-				json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+				json.dump(data, outfile, sort_keys=True, indent=4,
+					separators=(',', ': '))
 
 	except smtplib.SMTPAuthenticationError:
 		print 'authentication error: emails not sent'
@@ -95,8 +98,12 @@ def creat_pairs_for_week(data):
 
 	def get_previous_partners(person, pair_counts):
 		pairs = map(pair_list, list(pair_counts.elements()))
-		relevant_pairs = filter(lambda pair: (pair[0] == person) or (pair[1] == person), pairs)
-		partners = map(lambda pair: pair[1] if (pair[0]==person) else pair[0], relevant_pairs)
+		def is_relevant(pair):
+			return (pair[0] == person) or (pair[1] == person)
+		relevant_pairs = filter(is_relevant, pairs)
+		def make_partner(pair):
+			return pair[1] if (pair[0]==person) else pair[0]
+		partners = map(make_partner, relevant_pairs)
 		return partners
 
 	def exclude(pair_counts, pair_to_exclude):
@@ -110,12 +117,16 @@ def creat_pairs_for_week(data):
 
 	def most_common(a_counter):
 		max_count = a_counter.most_common(1)[0][1]
-		most_common_pair_counts = filter(lambda x: x[1]==max_count, a_counter.most_common())
+		def is_max(x):
+			return x[1]==max_count
+		most_common_pair_counts = filter(is_max, a_counter.most_common())
 		return map(lambda x: x[0], most_common_pair_counts)
 
 	def least_common(a_counter):
 		min_count = a_counter.most_common()[-1][1]
-		least_common_pair_counts = filter(lambda x: x[1]==min_count, a_counter.most_common())
+		def is_min(x):
+			return x[1]==min_count
+		least_common_pair_counts = filter(is_min, a_counter.most_common())
 		return map(lambda x: x[0], least_common_pair_counts)
 
 	def choose_extra_person(possible_doubles, pair_counts):
@@ -126,7 +137,9 @@ def creat_pairs_for_week(data):
 		if (len(never_paired_doubles)>0):
 			return random.choice(never_paired_doubles)
 		else:
-			double_people_tokens = filter(lambda x: x in possible_doubles, people_tokens)
+			def could_double(x):
+				return x in possible_doubles
+			double_people_tokens = filter(could_double, people_tokens)
 			double_counts = Counter(double_people_tokens)
 			least_comon_doubles = least_common(double_counts)
 			return random.choice(least_comon_doubles)
