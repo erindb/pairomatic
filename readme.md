@@ -18,12 +18,12 @@ A script to automatically send pairing emails to people so they can meet up and 
 
 Once data file is specified, run:
 
-	python pair-o-matic.py
+	python pairomatic.py
 
 By default, this will run in test mode and not actually send emails to people or re-write the history in your `data.json` file. If you want to actually send the emails, run:
 
-	python pair-o-matic.py -s
+	python pairomatic.py -s
 
 In order to run automatically on the 1st of the month at 2pm, include the following cronjob:
 
-	0 14 1 * * bash ~/path/to/pair-o-matic/pair-o-matic.sh
+	0 14 1 * * bash ~/path/to/pairomatic/pairomatic.sh
