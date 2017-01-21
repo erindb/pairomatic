@@ -150,7 +150,7 @@ def creat_pairs_for_week(data):
 		elements = a_counter.elements()
 		return Counter(filter(lambda x: x in a_list, elements))
 
-	people_this_week = data['people']['this_week']
+	people_this_week = data['people']['this_round']
 	pair_counts = get_pair_counts(data['history'], people_this_week)
 	already_paired = []
 	unpaired = [person for person in people_this_week]
