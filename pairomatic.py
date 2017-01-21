@@ -18,9 +18,22 @@ if "-s" in sys.argv:
 else:
 	mode = "test"
 
+def print_sample_email(data):
+	salutation = 'Hi {{personA}} and {{personB}}!'
+	email_content = "".join(open(data['email_content_file']).readlines()[1:])
+	email_subject = open(data['email_content_file']).readlines()[0][:-1]
+	body = salutation + email_content
+	print "========================email template========================"
+	print "subject: " + email_subject
+	print "--------------------------------------------------------------"
+	print body,
+	print "=============================================================="
+
 def main():
 	with open('data.json') as data_file:
 		data = json.load(data_file)
+
+	print_sample_email(data)
 
 	## decide pairings for this week based on data in json file
 	pairs_this_week = creat_pairs_for_week(data)
@@ -211,8 +224,8 @@ def send_emails(pairs, data):
 	for pair in pairs:
 		personA = pair[0]
 		personB = pair[1]
-		print namesub(personA)
-		print namesub(personB)
+		# print namesub(personA)
+		# print namesub(personB)
 		emailPair(personA, personB)
 
 main()
