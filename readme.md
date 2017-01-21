@@ -15,7 +15,8 @@ data:
 	- login information for said account under the key `source_account`
 	- information about people under the key `people`
 		- a list of people's emails under the key `emails`
-		- who to send emails to **this round** (may vary round by round who is available) under the key `this_round`
+		- who to send emails to **this round** (may vary round by round who is
+		available) under the key `this_round`
 		- a key of nicknames, etc. for how to actually refer to people in the
 		email salutation under the key `namesub`
 		- people willing to meet twice in one round under the key `doubles`
@@ -26,7 +27,8 @@ Once data file is specified, run:
 
 	python pairomatic.py
 
-By default, this will run in test mode and not actually send emails to people or re-write the history in your `data.json` file. It will print what would have
+By default, this will run in test mode and not actually send emails to people
+orre-write the history in your `data.json` file. It will print what would have
 been added to the `data.json` file to a new file `test.out`. If you want to
 actually send the emails, run:
 
