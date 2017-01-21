@@ -7,6 +7,7 @@ A script to automatically send pairing emails to people so they can meet up and 
 * Python 2.7.6 (possibly other versions would work, too)
 * an email account that [does not need to be secure](https://support.google.com/accounts/answer/6010255?hl=en)
 * a `data.json` file similar to `sample-data.json` that includes:
+	- a file name with the email content (first line is subject, rest of file is body of email) under `email_content_file`
 	- login information for said account under `source_account`
 	- a key of people's emails to in `people` > `emails`
 	- who to send emails to this week in `people` > `this_week`

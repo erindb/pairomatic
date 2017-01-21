@@ -190,22 +190,16 @@ def send_emails(pairs, data):
 
 	def emailPair(personA, personB):
 		salutation = 'Hi ' + namesub(personA) + ' and ' + namesub(personB) + '!'
-		body = salutation + """
-
-Congratulations! This month, the two of you have been randomly paired to meet up and talk through and/or read through some code together.
-
-Thanks and have fun!
-
-Erin
-
-P.S. Just let me know if you want to be taken off this list. Thanks!"""
+		email_content = "".join(open(data['email_content_file']).readlines()[1:])
+		email_subject = open(data['email_content_file']).readlines()[0][:-1]
+		body = salutation + email_content
 
 		if (mode=="send" and mode!="test"):
 			sendemail(from_addr    = my_email_address, 
 					  to_addr_list = [email_addresses[personA], email_addresses[personB]],
 					  cc_addr_list = [my_email_address],
 					  bcc_addr_list = [],
-					  subject      = 'CoCoLab Pair-o-Matic Code & Coffee Date Generator', 
+					  subject      = email_subject, 
 					  message      = body, 
 					  login        = my_user_id, 
 					  password     = password)
