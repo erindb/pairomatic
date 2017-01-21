@@ -1,3 +1,6 @@
+#! /usr/bin/env python
+# coding=UTF-8
+
 """
 Copyright © 2015 Erin D Bennett
 See the end of the file for license conditions.
