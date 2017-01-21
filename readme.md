@@ -26,6 +26,6 @@ By default, this will run in test mode and not actually send emails to people or
 
 In order to run automatically on the 1st of the month at 2pm, include the following cronjob:
 
-	0 14 1 * * bash ~/path/to/pairomatic/pairomatic.sh
+	0 14 1 * * python ~/path/to/pairomatic/pairomatic.py
 
 As you run `pairomatic`, it will update the `history` in `data.json` to keep track of who has met with who. It will try not to pair the same people together if there are other people they haven't met with yet.
