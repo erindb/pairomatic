@@ -1,5 +1,5 @@
 {
-    "email_content_file": "sample-email.txt",
+    "email_content_file": "email-content/sample-email.txt",
     "history": [
         {
             "day": "",
