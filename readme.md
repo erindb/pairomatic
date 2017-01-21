@@ -6,13 +6,14 @@ A script to automatically send pairing emails to people so they can meet up and 
 
 * Python 2.7.6 (possibly other versions would work, too)
 * an email account that [does not need to be secure](https://support.google.com/accounts/answer/6010255?hl=en)
-* a `data.json` file similar to `sample-data.json` that includes:
-	- a file name with the email content (first line is subject, rest of file is body of email) under `email_content_file`
-	- login information for said account under `source_account`
-	- a key of people's emails to in `people` > `emails`
-	- who to send emails to this round in `people` > `this_round`
-	- a key of nicknames, etc. for how to actually refer to people in the email salutation in `people` > `namesub`
-	- people willing to meet twice in one round in `people` > `doubles`
+* a `data.json` file similar to `sample-data.json` that includes the following data:
+	- a file name with the email content (first line is subject, rest of file is body of email) under the key `email_content_file`
+	- login information for said account under the key `source_account`
+	- information about people under the key `people`
+		- a list of people's emails under the key `emails`
+		- who to send emails to **this round** (may vary round by round who is available) under the key `this_round`
+		- a key of nicknames, etc. for how to actually refer to people in the email salutation under the key `namesub`
+		- people willing to meet twice in one round under the key `doubles`
 
 ## Usage
 
