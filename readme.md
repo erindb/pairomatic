@@ -20,7 +20,7 @@ Once data file is specified, run:
 
 	python pairomatic.py
 
-By default, this will run in test mode and not actually send emails to people or re-write the history in your `data.json` file. If you want to actually send the emails, run:
+By default, this will run in test mode and not actually send emails to people or re-write the history in your `data.json` file. It will print what would have been added to the `data.json` file to a new file `test.out`. If you want to actually send the emails, run:
 
 	python pairomatic.py -s
 
