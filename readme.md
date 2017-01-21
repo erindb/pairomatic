@@ -10,11 +10,11 @@ A script to automatically send pairing emails to people so they can meet up and 
 	- a file name with the email content (first line is subject, rest of file is body of email) under `email_content_file`
 	- login information for said account under `source_account`
 	- a key of people's emails to in `people` > `emails`
-	- who to send emails to this week in `people` > `this_week`
+	- who to send emails to this round in `people` > `this_round`
 	- a key of nicknames, etc. for how to actually refer to people in the email salutation in `people` > `namesub`
-	- people willing to meet twice in one week in `people` > `doubles`
+	- people willing to meet twice in one round in `people` > `doubles`
 
-## Installation
+## Usage
 
 Once data file is specified, run:
 
@@ -27,3 +27,5 @@ By default, this will run in test mode and not actually send emails to people or
 In order to run automatically on the 1st of the month at 2pm, include the following cronjob:
 
 	0 14 1 * * bash ~/path/to/pairomatic/pairomatic.sh
+
+As you run `pairomatic`, it will update the `history` in `data.json` to keep track of who has met with who. It will try not to pair the same people together if there are other people they haven't met with yet.
