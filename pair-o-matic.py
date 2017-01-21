@@ -11,6 +11,13 @@ from email.MIMEText import MIMEText
 # import getpass
 import smtplib
 
+import sys
+
+if "-s" in sys.argv:
+	mode = "send"
+else:
+	mode = "test"
+
 def main():
 	with open('data.json') as data_file:
 		data = json.load(data_file)
@@ -28,14 +35,20 @@ def main():
 	try:
 		send_emails(pairs_this_week, data)
 		week['email_sent'] = True
+		# add new week to history
+		data['history'].append(week)
+
+		if (mode=="send" and mode!="test"):
+			with open('data.json', 'w') as outfile:
+				json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+				print "updating history"
+		else:
+			print "you are in test mode. no data written to data.json. see test.out for what would have been written to data.json."
+			with open('test.out', 'w') as outfile:
+				json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+
 	except smtplib.SMTPAuthenticationError:
-		print 'emails not sent'
-
-	# add new week to history
-	data['history'].append(week)
-
-	with open('data.json', 'w') as outfile:
-		json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+		print 'authentication error: emails not sent'
 
 def creat_pairs_for_week(data):
 	def pair_string(pair):
@@ -187,17 +200,19 @@ Erin
 
 P.S. Just let me know if you want to be taken off this list. Thanks!"""
 
-		sendemail(from_addr    = my_email_address, 
-				  to_addr_list = [email_addresses[personA], email_addresses[personB]],
-				  cc_addr_list = [my_email_address],
-				  bcc_addr_list = [],
-				  subject      = 'CoCoLab Pair-o-Matic Code & Coffee Date Generator', 
-				  # subject      = 'CoCoLab + LangCogLab Pair-o-Matic Coffee Date Generator', 
-				  message      = body, 
-				  login        = my_user_id, 
-				  password     = password)
+		if (mode=="send" and mode!="test"):
+			sendemail(from_addr    = my_email_address, 
+					  to_addr_list = [email_addresses[personA], email_addresses[personB]],
+					  cc_addr_list = [my_email_address],
+					  bcc_addr_list = [],
+					  subject      = 'CoCoLab Pair-o-Matic Code & Coffee Date Generator', 
+					  message      = body, 
+					  login        = my_user_id, 
+					  password     = password)
 
-		print "sent to", personA, "and", personB
+			print "sent to", personA, "and", personB
+		else:
+			print "you are in test mode. if you had included -s, i would have sent to ", personA, "and", personB
 
 	for pair in pairs:
 		personA = pair[0]
