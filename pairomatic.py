@@ -133,7 +133,9 @@ def creat_pairs_for_week(data):
 		pairs = map(pair_list, list(pair_counts.elements()))
 		#list(chain.from_iterable(pair_lists))
 		people_tokens = list(chain.from_iterable(pairs))
-		never_paired_doubles = [person for person in possible_doubles if not person in people_tokens]
+		never_paired_doubles = [person for person
+			in possible_doubles
+			if not person in people_tokens]
 		if (len(never_paired_doubles)>0):
 			return random.choice(never_paired_doubles)
 		else:
@@ -152,7 +154,9 @@ def creat_pairs_for_week(data):
 	pair_counts = get_pair_counts(data['history'], people_this_week)
 	already_paired = []
 	unpaired = [person for person in people_this_week]
-	doubles = [person for person in people_this_week if person in data['people']['doubles']]
+	doubles = [person for person
+		in people_this_week
+		if person in data['people']['doubles']]
 
 	pairs_this_week = []
 
@@ -164,26 +168,41 @@ def creat_pairs_for_week(data):
 		else:
 			people_to_repair = unpaired[0:1]
 		for person_to_repair in people_to_repair:
-			previous_partners = get_previous_partners(person_to_repair, pair_counts)
-			never_paired_partners = [partner for partner in people_this_week if ((not partner in previous_partners) and (partner != person_to_repair))]
-			# any person who the person_to_pair hasn't been paired with (who hasn't already been paired this week) would be a great partner
-			never_paired_potential_partners = filter(lambda x: not x in  already_paired, never_paired_partners)
+			previous_partners = get_previous_partners(person_to_repair,
+				pair_counts)
+			def is_good_partner(partner):
+				return ((not partner in previous_partners)
+					and (partner != person_to_repair))
+			never_paired_partners = [partner for partner
+				in people_this_week
+				if is_good_partner(partner)]
+			def pairable(x):
+				return not x in already_paired
+			# any person who the person_to_pair hasn't been paired with (who
+			# hasn't already been paired this week) would be a great partner
+			never_paired_potential_partners = filter(pairable,
+				never_paired_partners)
 			if (len(never_paired_potential_partners)>0):
 				new_partner = random.choice(never_paired_potential_partners)
 			else:
-				# the partner (who hasn't already been paired this week and) who the parson_to_pair has been paired with least is best
-				potential_partners = filter(lambda x: not x in  already_paired, previous_partners)
+				# the partner (who hasn't already been paired this week and)
+				# who the parson_to_pair has been paired with least is best
+				potential_partners = filter(pairable, previous_partners)
 				new_partner = Counter(previous_partners).most_common()[-1][0]
 			new_pair = [person_to_repair, new_partner]
 			#add new pair to this week's pairs
 			pairs_this_week.append(new_pair)
 			already_paired.append(person_to_repair)
 			already_paired.append(new_partner)
-			unpaired = [person for person in people_this_week if not person in already_paired]
+			unpaired = [person for person
+				in people_this_week
+				if pairable(person)]
 
 	if len(unpaired) == 1:
 		person_to_repair = unpaired[0]
-		possible_doubles = [person for person in doubles if person != person_to_repair]
+		possible_doubles = [person for person
+			in doubles
+			if person != person_to_repair]
 		extra_person = choose_extra_person(possible_doubles, pair_counts)
 		new_partner = extra_person
 		new_pair = [person_to_repair, new_partner]
@@ -191,7 +210,9 @@ def creat_pairs_for_week(data):
 		pairs_this_week.append(new_pair)
 		already_paired.append(person_to_repair)
 		already_paired.append(new_partner)
-		unpaired = [person for person in people_this_week if not person in already_paired]
+		unpaired = [person for person
+			in people_this_week
+			if pairable(person)]
 
 	return pairs_this_week
 
@@ -209,8 +230,8 @@ def send_emails(pairs, data):
 		else:
 			return person
 
-	def sendemail(from_addr, to_addr_list, cc_addr_list, bcc_addr_list, subject, message, login,
-	    password):
+	def sendemail(from_addr, to_addr_list, cc_addr_list, bcc_addr_list, subject,
+				message, login, password):
 		header  = 'From: %s\n' % from_addr
 		header += 'To: %s\n' % ','.join(to_addr_list)
 		header += 'Cc: %s\n' % ','.join(cc_addr_list)
@@ -219,18 +240,21 @@ def send_emails(pairs, data):
 
 		server = smtplib.SMTP_SSL('smtp.gmail.com:465')
 		server.login(login,password)
-		problems = server.sendmail(from_addr, to_addr_list + cc_addr_list + bcc_addr_list, message)
+		problems = server.sendmail(from_addr, to_addr_list + cc_addr_list + 
+			bcc_addr_list, message)
 		server.quit()
 
 	def emailPair(personA, personB):
 		salutation = 'Hi ' + namesub(personA) + ' and ' + namesub(personB) + '!'
-		email_content = "".join(open(data['email_content_file']).readlines()[1:])
+		email_content = "".join(
+			open(data['email_content_file']).readlines()[1:])
 		email_subject = open(data['email_content_file']).readlines()[0][:-1]
 		body = salutation + email_content
+		to_addr_list = [email_addresses[personA], email_addresses[personB]]
 
 		if (mode=="send" and mode!="test"):
 			sendemail(from_addr    = my_email_address, 
-					  to_addr_list = [email_addresses[personA], email_addresses[personB]],
+					  to_addr_list = to_addr_list,
 					  cc_addr_list = [my_email_address],
 					  bcc_addr_list = [],
 					  subject      = email_subject, 
@@ -240,7 +264,8 @@ def send_emails(pairs, data):
 
 			print "sent to", personA, "and", personB
 		else:
-			print "you are in test mode. if you had included -s, i would have sent to ", personA, "and", personB
+			print "you are in test mode. if you had included -s, i would have",
+			print "sent to ", personA, "and", personB
 
 	for pair in pairs:
 		personA = pair[0]
