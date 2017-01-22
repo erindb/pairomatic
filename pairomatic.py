@@ -28,8 +28,10 @@ else:
 
 def print_sample_email(data):
 	salutation = 'Hi {{personA}} and {{personB}}!'
-	email_content = "".join(open(data['email_content_file']).readlines()[1:])
-	email_subject = open(data['email_content_file']).readlines()[0][:-1]
+	with open(data['email_content_file']) as content_file:
+		email_content_lines = content_file.readlines()
+	email_content = "".join(email_content_lines[1:])
+	email_subject = email_content_lines[0][:-1]
 	body = salutation + email_content
 	print "========================email template========================"
 	print "subject: " + email_subject
@@ -246,9 +248,10 @@ def send_emails(pairs, data):
 
 	def emailPair(personA, personB):
 		salutation = 'Hi ' + namesub(personA) + ' and ' + namesub(personB) + '!'
-		email_content = "".join(
-			open(data['email_content_file']).readlines()[1:])
-		email_subject = open(data['email_content_file']).readlines()[0][:-1]
+		with open(data['email_content_file']) as content_file:
+			email_content_lines = content_file.readlines()
+		email_content = "".join(email_content_lines[1:])
+		email_subject = email_content_lines[0][:-1]
 		body = salutation + email_content
 		to_addr_list = [email_addresses[personA], email_addresses[personB]]
 
