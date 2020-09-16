@@ -1,49 +1,42 @@
 #! /usr/bin/env python
 # coding=UTF-8
 
-"""
-Copyright © 2017 Erin D Bennett
-See the end of the file for license conditions.
-"""
-
 import json
 import random
 from time import strftime
 from itertools import chain
 from collections import Counter
+import argparse
 
-## imports for email:
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-## for if you want to send emails from a secure email address:
-# import getpass
-import smtplib
+# to automate slack
+import urllib.request
+import os
+import json
 
-import sys
-
-if "-s" in sys.argv:
-	mode = "send"
-else:
-	mode = "test"
-
-def print_sample_email(data):
-	salutation = 'Hi {{personA}} and {{personB}}!'
-	with open(data['email_content_file']) as content_file:
-		email_content_lines = content_file.readlines()
-	email_content = "".join(email_content_lines[1:])
-	email_subject = email_content_lines[0][:-1]
-	body = salutation + email_content
-	print "========================email template========================"
-	print "subject: " + email_subject
-	print "--------------------------------------------------------------"
-	print body,
-	print "=============================================================="
+def send_slack_message(text, webhook_url):
+    if webhook_url is not None:
+        r = urllib.request.Request(webhook_url,
+                                   data=json.dumps({'text': text}).encode('utf-8'),
+                                   headers={
+                                       'Content-Type': 'application/json'
+                                   },
+                                   method='POST')
+        with urllib.request.urlopen(r) as f:
+            status = str(f.status)
+    else:
+        status = 'not sent - no webhook URL'
+ 
+    print('Slack message: {} (status: {})'.format(text, status))
 
 def main():
-	with open('data.json') as data_file:
-		data = json.load(data_file)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--slack", action="store_true", help="slack")
+	parser.add_argument("--save",  action="store_true", help="save data")
+	parser.add_argument("--i", type=str, help="input data file", default="data.json")
+	args = parser.parse_args()
 
-	print_sample_email(data)
+	with open(args.i) as data_file:
+		data = json.load(data_file)
 
 	## decide pairings for this week based on data in json file
 	pairs_this_week = creat_pairs_for_week(data)
@@ -54,244 +47,139 @@ def main():
 		'email_sent': False
 	}
 
-	## attempt to send emails and record if success
-	try:
-		send_emails(pairs_this_week, data)
-		week['email_sent'] = True
-		# add new week to history
+	if args.slack:
+		send_slack_message(
+			"Here are the pairs for this week!\n" +
+			"\n".join(
+				["{} & {}".format(pair[0], pair[1]) for pair in pairs_this_week]
+			) +
+			"\n" +
+			data["slack"]["message"]["post"],
+			data["slack"]["webhook_url"]
+		)
+		week["email_sent"] = True
+
 		data['history'].append(week)
+		with open(args.i, 'w') as outfile:
+			json.dump(data, outfile, sort_keys=True, indent=4,
+				separators=(',', ': '))
+			print("updating history")
 
-		if (mode=="send" and mode!="test"):
-			with open('data.json', 'w') as outfile:
-				json.dump(data, outfile, sort_keys=True, indent=4,
-					separators=(',', ': '))
-				print "updating history"
-		else:
-			print "you are in test mode. no data written to data.json.",
-			print "see test.out for what would have been written to data.json."
-			with open('test.out', 'w') as outfile:
-				json.dump(data, outfile, sort_keys=True, indent=4,
-					separators=(',', ': '))
+	for pair in pairs_this_week:
+		print("{} & {}".format(namesub(pair[0], data), namesub(pair[1], data)))
 
-	except smtplib.SMTPAuthenticationError:
-		print 'authentication error: emails not sent'
+def pair_string(pair):
+	pair.sort()
+	return "~".join(pair)
 
-def creat_pairs_for_week(data):
-	def pair_string(pair):
-		pair.sort()
-		return "~".join(pair)
+def pair_list(pair_string):
+	return pair_string.split("~")
 
-	def pair_list(pair_string):
-		return pair_string.split("~")
+def most_common(a_counter):
+	max_count = a_counter.most_common(1)[0][1]
+	def is_max(x):
+		return x[1]==max_count
+	most_common_pair_counts = [x for x in a_counter.most_common() if is_max(x)]
+	return [x[0] for x in most_common_pair_counts]
 
-	def get_pair_counts(history, this_week):
-		# filter so that only emails that actually got sent count
-		relevant_history = filter(lambda x: x['email_sent'], history)
-		pair_lists = map(lambda x: x['pairs'], relevant_history)
-		pairs = list(chain.from_iterable(pair_lists))
-		# filter so that only pairs of people in this week are counted
-		relevant_pairs = filter(
-			lambda pair: (pair[0] in this_week) and (pair[1] in this_week),
-			pairs)
-		pair_strings = map(lambda x: pair_string(x), relevant_pairs)
-	  	pair_counts = Counter(pair_strings)
-		return pair_counts
-		return involves_person
+def pair_contains_person_in_list(pair, a_list):
+	people_in_pair = pair.split("~")
+	return people_in_pair[0] in a_list or people_in_pair[1] in a_list
 
-	def get_previous_partners(person, pair_counts):
-		pairs = map(pair_list, list(pair_counts.elements()))
-		def is_relevant(pair):
-			return (pair[0] == person) or (pair[1] == person)
-		relevant_pairs = filter(is_relevant, pairs)
-		def make_partner(pair):
-			return pair[1] if (pair[0]==person) else pair[0]
-		partners = map(make_partner, relevant_pairs)
-		return partners
+def subset_one(a_counter, a_list):
+	elements = a_counter.elements()
+	return Counter([x for x in elements if pair_contains_person_in_list(x, a_list)])
 
-	def exclude(pair_counts, pair_to_exclude):
-		pairs = map(pair_list, list(pair_counts.elements()))
-		remaining_pairs = filter(lambda pair: (
-			(pair[0] != pair_to_exclude[0]) and
-			(pair[0] != pair_to_exclude[1]) and
-			(pair[1] != pair_to_exclude[0]) and
-			(pair[1] != pair_to_exclude[1])), pairs)
-		return Counter(map(pair_string, remaining_pairs))
-
-	def most_common(a_counter):
-		max_count = a_counter.most_common(1)[0][1]
-		def is_max(x):
-			return x[1]==max_count
-		most_common_pair_counts = filter(is_max, a_counter.most_common())
-		return map(lambda x: x[0], most_common_pair_counts)
-
-	def least_common(a_counter):
+def least_common(a_counter):
+	if len(a_counter.most_common()) == 0:
+		return [pair_list(x)[0] for x in list(a_counter.elements())]
+	else:
 		min_count = a_counter.most_common()[-1][1]
 		def is_min(x):
 			return x[1]==min_count
-		least_common_pair_counts = filter(is_min, a_counter.most_common())
-		return map(lambda x: x[0], least_common_pair_counts)
+		least_common_pair_counts = [x for x in a_counter.most_common() if is_min(x)]
+		return [x[0] for x in least_common_pair_counts]
 
-	def choose_extra_person(possible_doubles, pair_counts):
-		pairs = map(pair_list, list(pair_counts.elements()))
-		#list(chain.from_iterable(pair_lists))
-		people_tokens = list(chain.from_iterable(pairs))
-		never_paired_doubles = [person for person
-			in possible_doubles
-			if not person in people_tokens]
-		if (len(never_paired_doubles)>0):
-			return random.choice(never_paired_doubles)
-		else:
-			def could_double(x):
-				return x in possible_doubles
-			double_people_tokens = filter(could_double, people_tokens)
-			double_counts = Counter(double_people_tokens)
-			least_comon_doubles = least_common(double_counts)
-			return random.choice(least_comon_doubles)
+def get_pair_counts(history, this_week):
+	pairs_history = [p for x in history for p in x['pairs']]
+	# filter so that only pairs of people in this week are counted
+	relevant_pairs_history = [pair for pair in pairs_history if (pair[0] in this_week) and (pair[1] in this_week)]
+	pair_strings_history = [pair_string(x) for x in relevant_pairs_history]
+	all_pairs = []
+	for personA in this_week:
+		for personB in this_week:
+			if personA < personB:
+				all_pairs.append("{}~{}".format(personA, personB))
+	pair_counts = Counter(pair_strings_history + all_pairs)
+	return pair_counts
 
-	def subset(a_counter, a_list):
-		elements = a_counter.elements()
-		return Counter(filter(lambda x: x in a_list, elements))
-
+def creat_pairs_for_week(data):
 	people_this_week = data['people']['this_round']
 	pair_counts = get_pair_counts(data['history'], people_this_week)
-	already_paired = []
-	unpaired = [person for person in people_this_week]
-	doubles = [person for person
-		in people_this_week
-		if person in data['people']['doubles']]
 
+	# set up lists of who is paired vs unpaired
+	already_paired = set()
+	unpaired = set(people_this_week)
+	doubles = set([person for person
+		in people_this_week
+		if person in data['people']['doubles']])
 	pairs_this_week = []
+	def pairable(x):
+		return not x in already_paired
+
+	if len(unpaired) % 2 == 1 and len(doubles) == 0:
+		raise Exception("There's an odd number this week! Either remove/add someone from the list or get a volunteer to double up.")
 
 	while len(unpaired)>1:
-		unpaired_pair_counts = subset(pair_counts, unpaired)
-		if len(unpaired_pair_counts)>0:
-			pair_to_repair = random.choice(most_common(unpaired_pair_counts))
-			people_to_repair = pair_to_repair.split("~")
-		else:
-			people_to_repair = unpaired[0:1]
-		for person_to_repair in people_to_repair:
-			previous_partners = get_previous_partners(person_to_repair,
-				pair_counts)
-			def is_good_partner(partner):
-				return ((not partner in previous_partners)
-					and (partner != person_to_repair))
-			never_paired_partners = [partner for partner
-				in people_this_week
-				if is_good_partner(partner)]
-			def pairable(x):
-				return not x in already_paired
-			# any person who the person_to_pair hasn't been paired with (who
-			# hasn't already been paired this week) would be a great partner
-			never_paired_potential_partners = filter(pairable,
-				never_paired_partners)
-			if (len(never_paired_potential_partners)>0):
-				new_partner = random.choice(never_paired_potential_partners)
+		new_pairs = []
+		if len(unpaired) == 2:
+			new_pairs.append(unpaired)
+		elif len(unpaired) == 1:
+			person_to_pair = unpaired[0]
+			if person_to_pair in doubles:
+				# break up a different pair if the remaining person is willing to double up
+				past_pair = pairs_this_week.pop()
+				new_pairs.append([person_to_pair, past_pair[0]])
+				new_pairs.append([person_to_pair, past_pair[1]])
 			else:
-				# the partner (who hasn't already been paired this week and)
-				# who the parson_to_pair has been paired with least is best
-				potential_partners = filter(pairable, previous_partners)
-				new_partner = Counter(previous_partners).most_common()[-1][0]
-			new_pair = [person_to_repair, new_partner]
-			#add new pair to this week's pairs
-			pairs_this_week.append(new_pair)
-			already_paired.append(person_to_repair)
-			already_paired.append(new_partner)
+				# or pair the remaining person up with whoever they've met with least who's willing to meet twice
+				possible_doubles = [person for person
+					in doubles
+					if person != person_to_pair]
+				extra_person = choose_extra_person(possible_doubles, pair_counts)
+				new_partner = extra_person
+				new_pairs.append([person_to_pair, new_partner])
+		else:
+			# find the pairs that have been paired together the most and pair them with someone else
 			unpaired = [person for person
 				in people_this_week
 				if pairable(person)]
-
-	if len(unpaired) == 1:
-		person_to_repair = unpaired[0]
-		possible_doubles = [person for person
-			in doubles
-			if person != person_to_repair]
-		extra_person = choose_extra_person(possible_doubles, pair_counts)
-		new_partner = extra_person
-		new_pair = [person_to_repair, new_partner]
+			unpaired_pair_counts = get_pair_counts(data['history'], unpaired)
+			most_commonly_paired = [x for pair_string in most_common(unpaired_pair_counts) for x in pair_list(pair_string)]
+			random.shuffle(most_commonly_paired)
+			person_to_pair = most_commonly_paired[0]
+			potential_new_partners = [
+				[x for x in pair_list(s) if x != person_to_pair][0] for s
+				in least_common(subset_one(unpaired_pair_counts, [person_to_pair]))
+			]
+			random.shuffle(potential_new_partners)
+			new_pairs.append([person_to_pair, potential_new_partners[0]])
 		#add new pair to this week's pairs
-		pairs_this_week.append(new_pair)
-		already_paired.append(person_to_repair)
-		already_paired.append(new_partner)
+		for new_pair in new_pairs:
+			pairs_this_week.append(new_pair)
+			already_paired.add(new_pair[0])
+			already_paired.add(new_pair[1])
 		unpaired = [person for person
 			in people_this_week
 			if pairable(person)]
 
 	return pairs_this_week
 
-def send_emails(pairs, data):
-
-	my_email_address = data['source_account']['email_address']
-	my_user_id = data['source_account']['user_id']
-	password = data['source_account']['password']
-	email_addresses = data['people']['emails']
+def namesub(person, data):
 	namesub_dict = data['people']['namesub']
-
-	def namesub(person):
-		if person in namesub_dict.keys():
-			return namesub_dict[person]
-		else:
-			return person
-
-	def sendemail(from_addr, to_addr_list, cc_addr_list, bcc_addr_list, subject,
-				message, login, password):
-		header  = 'From: %s\n' % from_addr
-		header += 'To: %s\n' % ','.join(to_addr_list)
-		header += 'Cc: %s\n' % ','.join(cc_addr_list)
-		header += 'Subject: %s\n\n' % subject
-		message = header + message
-
-		server = smtplib.SMTP_SSL('smtp.gmail.com:465')
-		server.login(login,password)
-		problems = server.sendmail(from_addr, to_addr_list + cc_addr_list + 
-			bcc_addr_list, message)
-		server.quit()
-
-	def emailPair(personA, personB):
-		salutation = 'Hi ' + namesub(personA) + ' and ' + namesub(personB) + '!'
-		with open(data['email_content_file']) as content_file:
-			email_content_lines = content_file.readlines()
-		email_content = "".join(email_content_lines[1:])
-		email_subject = email_content_lines[0][:-1]
-		body = salutation + email_content
-		to_addr_list = [email_addresses[personA], email_addresses[personB]]
-
-		if (mode=="send" and mode!="test"):
-			sendemail(from_addr    = my_email_address, 
-					  to_addr_list = to_addr_list,
-					  cc_addr_list = [my_email_address],
-					  bcc_addr_list = [],
-					  subject      = email_subject, 
-					  message      = body, 
-					  login        = my_user_id, 
-					  password     = password)
-
-			print "sent to", personA, "and", personB
-		else:
-			print "you are in test mode. if you had included -s, i would have",
-			print "sent to ", personA, "and", personB
-
-	for pair in pairs:
-		personA = pair[0]
-		personB = pair[1]
-		# print namesub(personA)
-		# print namesub(personB)
-		emailPair(personA, personB)
+	if person in namesub_dict.keys():
+		return namesub_dict[person]
+	else:
+		return person
 
 main()
-
-"""
-This file is part of pairomatic.
-
-Pairomatic is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-GNU Affero Emacs is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with pairomatic.  If not, see <http://www.gnu.org/licenses/>.
-"""

@@ -1,43 +1,40 @@
 # README
 
-A script to automatically send pairing emails to people so they can meet up and
+A script to automatically send slack messages to a channel so ppl can meet up and
 talk about their work.
 
 ## Requirements
 
-* Python 2.7.6 (possibly other versions would work, too)
-* an email account that
-[does not need to be secure](https://support.google.com/accounts/answer/6010255?hl=en)
-* a `data.json` file similar to `sample-data.json` that includes the following
+* Python 3
+* a slack webhook URL
+* a `.json` file similar to `sample-data.json` that includes the following
 data:
-	- a file name with the email content (first line is subject, rest of file is
-	body of email) under the key `email_content_file`
-	- login information for said account under the key `source_account`
+	- slack webhood and message content
 	- information about people under the key `people`
-		- a list of people's emails under the key `emails`
-		- who to send emails to **this round** (may vary round by round who is
+		- who to pair up on **this round** (may vary round by round who is
 		available) under the key `this_round`
-		- a key of nicknames, etc. for how to actually refer to people in the
-		email salutation under the key `namesub`
+		- a key of nicknames, etc. for how to actually refer to people, under the key `namesub`
 		- people willing to meet twice in one round under the key `doubles`
 
 ## Usage
 
 Once data file is specified, run:
 
-	python pairomatic.py
+	python pairomatic.py --i sample-data.json
 
-By default, this will run in test mode and not actually send emails to people
-orre-write the history in your `data.json` file. It will print what would have
+You can replace `sample-data.json` with your own data file.
+
+By default, this will run in test mode and not actually send messages
+or re-write the history in your `data.json` file. It will print what would have
 been added to the `data.json` file to a new file `test.out`. If you want to
-actually send the emails, run:
+actually send the message, run:
 
-	python pairomatic.py -s
+	python pairomatic.py --i sample-data.json --slack
 
 In order to run automatically on the 1st of the month at 2pm, include the
 following cronjob:
 
-	0 14 1 * * python ~/path/to/pairomatic/pairomatic.py
+	0 14 1 * * python ~/path/to/pairomatic/pairomatic.py --i data.json --slack
 
 As you run `pairomatic`, it will update the `history` in `data.json` to keep
 track of who has met with who. It will try not to pair the same people together
